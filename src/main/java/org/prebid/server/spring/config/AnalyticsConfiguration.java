@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.prebid.server.analytics.AnalyticsReporter;
 import org.prebid.server.analytics.reporter.AnalyticsReporterDelegator;
+import org.prebid.server.analytics.reporter.greenbids.GreenbidsAnalyticsReporter;
+import org.prebid.server.analytics.reporter.greenbids.model.GreenbidsAnalyticsProperties;
 import org.prebid.server.analytics.reporter.log.LogAnalyticsReporter;
 import org.prebid.server.analytics.reporter.pubstack.PubstackAnalyticsReporter;
 import org.prebid.server.analytics.reporter.pubstack.model.PubstackAnalyticsProperties;
@@ -50,6 +52,44 @@ public class AnalyticsConfiguration {
     @ConditionalOnProperty(prefix = "analytics.log", name = "enabled", havingValue = "true")
     LogAnalyticsReporter logAnalyticsReporter(JacksonMapper mapper) {
         return new LogAnalyticsReporter(mapper);
+    }
+
+    @Configuration
+    @ConditionalOnProperty(prefix = "analytics.greenbids", name = "enabled", havingValue = "true")
+    public static class GreenbidsAnalyticsConfiguration {
+
+        @Bean
+        GreenbidsAnalyticsReporter greenbidsAnalyticsReporter(
+                GreenbidsAnalyticsConfigurationProperties greenbidsAnalyticsConfigurationProperties,
+                JacksonMapper jacksonMapper) {
+            return new GreenbidsAnalyticsReporter(
+                    greenbidsAnalyticsConfigurationProperties.toComponentProperties(),
+                    jacksonMapper);
+        }
+
+        @Bean
+        @ConfigurationProperties(prefix = "analytics.greenbids")
+        GreenbidsAnalyticsConfigurationProperties greenbidsAnalyticsConfigurationProperties() {
+            return new GreenbidsAnalyticsConfigurationProperties();
+        }
+
+        @Validated
+        @NoArgsConstructor
+        @Data
+        private static class GreenbidsAnalyticsConfigurationProperties {
+            @javax.validation.constraints.NotNull
+            String pbuid;
+
+            Double greenbidsSampling;
+
+            public GreenbidsAnalyticsProperties toComponentProperties() {
+                return GreenbidsAnalyticsProperties.builder()
+                        .pbuid(getPbuid())
+                        .greenbidsSampling(getGreenbidsSampling())
+                        .exploratorySamplingSplit(0.9)
+                        .build();
+            }
+        }
     }
 
     @Configuration
